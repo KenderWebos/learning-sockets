@@ -2,8 +2,8 @@ import socket
 import threading
 
 # Datos del servidor
-HOST = 'kender.duckdns.org'
-PORT = 3030
+HOST = '192.168.1.87'
+PORT = 65432
 
 # Función para recibir mensajes del servidor
 def receive_messages(client_socket):

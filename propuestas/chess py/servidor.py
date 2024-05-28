@@ -2,8 +2,8 @@ import socket
 import threading
 
 # Datos del servidor
-HOST = 'kender.duckdns.org'
-PORT = 3030
+HOST = '192.168.1.87'  # Localhost
+PORT = 65432
 
 # Listas para los clientes y sus identificadores
 clients = []
