@@ -7,15 +7,17 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-let nextUserId = 1;
+const animalEmojis = ['🐶', '🐱', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'];
+let nextUserId = 0;
 
 // Manejador de conexiones
 io.on('connection', (socket) => {
-  const userId = nextUserId++;
+  const userId = animalEmojis[nextUserId % animalEmojis.length] + '[' + nextUserId + ']';
+  nextUserId++;
   console.log(`Usuario ${userId} conectado`);
 
   // Enviar el ID del usuario al cliente
-  socket.emit('userId', userId);
+  socket.emit('chatMessage');
 
   // Manejar mensajes de chat
   socket.on('chatMessage', (msg) => {
@@ -32,7 +34,8 @@ io.on('connection', (socket) => {
 app.use(express.static('public'));
 
 // Iniciar el servidor
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3030;
 server.listen(PORT, () => {
   console.log(`Servidor escuchando en el puerto ${PORT}`);
+  console.log(`http://localhost:${PORT}`);
 });
