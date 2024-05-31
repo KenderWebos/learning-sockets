@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat con Sockets</title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #chat-container {
+      max-width: 600px;
+      margin: 50px auto;
+    }
+    #chat {
+      list-style-type: none;
+      padding: 0;
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      background-color: #f8f9fa;
+    }
+    #chat li {
+      padding: 5px 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    #chat li:nth-child(odd) {
+      background-color: #e9ecef;
+    }
+    #message-form {
+      display: flex;
+    }
+    #message-input {
+      flex: 1;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container" class="container">
+    <ul id="chat" class="mb-3"></ul>
+    <form id="message-form" class="input-group">
+      <input id="message-input" class="form-control" autocomplete="off" placeholder="Escribe un mensaje..." />
+      <div class="input-group-append">
+        <button id="send-button" class="btn btn-outline-dark">Enviar</button>
+      </div>
+    </form>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const chat = document.getElementById('chat');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+
+    let userId = null;
+
+    socket.on('userId', (id) => {
+      userId = id;
+    });
+
+    socket.on('chatMessage', (data) => {
+      const item = document.createElement('li');
+      item.textContent = `${data.userId}: ${data.msg}`;
+      chat.appendChild(item);
+      chat.scrollTop = chat.scrollHeight;
+    });
+
+    messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const msg = messageInput.value;
+      socket.emit('chatMessage', msg);
+      messageInput.value = '';
+    });
+  </script>
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
