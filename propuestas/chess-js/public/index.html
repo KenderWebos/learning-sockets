@@ -1,82 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat con Sockets</title>
-  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    #chat-container {
-      max-width: 600px;
-      margin: 50px auto;
-    }
-    #chat {
-      list-style-type: none;
-      padding: 0;
-      height: 300px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      padding: 10px;
-      background-color: #f8f9fa;
-    }
-    #chat li {
-      padding: 5px 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-    }
-    #chat li:nth-child(odd) {
-      background-color: #e9ecef;
-    }
-    #message-form {
-      display: flex;
-    }
-    #message-input {
-      flex: 1;
-      margin-right: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div id="chat-container" class="container">
-    <ul id="chat" class="mb-3"></ul>
-    <form id="message-form" class="input-group">
-      <input id="message-input" class="form-control" autocomplete="off" placeholder="Escribe un mensaje..." />
-      <div class="input-group-append">
-        <button id="send-button" class="btn btn-outline-dark">Enviar</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat con Sockets</title>
+    <link
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div class="row p-4">
+      <div class="col">
+        <center><h1>Zoo Chat</h1></center>
+
+        <div id="chat-container" class="container">
+          <ul id="chat" class="mb-3"></ul>
+          <form id="message-form" class="input-group">
+            <input
+              id="message-input"
+              class="form-control"
+              autocomplete="off"
+              placeholder="Escribe un mensaje..."
+            />
+            <div class="input-group-append">
+              <button id="send-button" class="btn btn-outline-dark">
+                Enviar
+              </button>
+            </div>
+          </form>
+
+          <div class="card mt-4">
+            <div class="card-header">Usuarios Conectados</div>
+
+            <center>
+              <div class="card-body">
+                <p class="" id="online_users"></p>
+              </div>
+            </center>
+          </div>
+        </div>
       </div>
-    </form>
-  </div>
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+      <div class="col">
+        <center>
+          <h1>ChessPark</h1>
 
-    const chat = document.getElementById('chat');
-    const messageForm = document.getElementById('message-form');
-    const messageInput = document.getElementById('message-input');
+          <div class="card">
+            <div class="card-header">
+              <div class="vs-container">
+                <div class="row p-4">
+                  <p id="chess-player-01" class="col">Jugador 1</p>
+                  <div class="col">
+                    <img
+                      class="image-icon img-respirando"
+                      src="resources/img/vs.png"
+                      alt="some vs image"
+                    />
+                  </div>
+                  <p id="chess-player-02" class="col">Jugador 2</p>
+                </div>
+              </div>
+            </div>
+            <div class="card-body"></div>
+          </div>
 
-    let userId = null;
+          <button id="btn_join_chess" class="btn btn-success m-4">
+            Conectarse
+          </button>
+        </center>
+      </div>
+    </div>
 
-    socket.on('userId', (id) => {
-      userId = id;
-    });
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- <script src="js/main.js"></script> -->
 
-    socket.on('chatMessage', (data) => {
-      const item = document.createElement('li');
-      item.textContent = `${data.userId}: ${data.msg}`;
-      chat.appendChild(item);
-      chat.scrollTop = chat.scrollHeight;
-    });
+    <script>
+      const socket = io();
 
-    messageForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      const msg = messageInput.value;
-      socket.emit('chatMessage', msg);
-      messageInput.value = '';
-    });
-  </script>
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
+      const chat = document.getElementById("chat");
+      const online_users = document.getElementById("online_users");
+
+      const messageForm = document.getElementById("message-form");
+      const messageInput = document.getElementById("message-input");
+
+      const btn_join_chess = document.getElementById("btn_join_chess");
+
+      const player01 = document.getElementById("chess-player-01");
+      const player02 = document.getElementById("chess-player-02");
+
+      let userId = null;
+
+      socket.on("userId", (data) => {
+        if (userId == null) {
+          userId = data;
+          console.log(userId);
+        }
+      });
+
+      socket.on("chatMessage", (data) => {
+        const item = document.createElement("li");
+        item.textContent = `${data.userId}: ${data.msg}`;
+        chat.appendChild(item);
+        chat.scrollTop = chat.scrollHeight;
+      });
+
+      socket.on("join-chess", (data) => {
+        player01.textContent = data[0];
+        player02.textContent = data[1];
+      });
+
+      socket.on("online_users_feed", (data) => {
+        online_users.textContent = `${data}`;
+      });
+
+      messageForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const msg = messageInput.value;
+        socket.emit("chatMessage", msg);
+        messageInput.value = "";
+      });
+
+      btn_join_chess.addEventListener("click", (event) => {
+        socket.emit("join-chess", userId);
+      });
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  </body>
 </html>
