@@ -1,133 +1,191 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat con Sockets</title>
-    <link
-      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="css/style.css" />
-  </head>
-  <body>
-    <div class="row p-4">
-      <div class="col">
-        <center><h1>Zoo Chat</h1></center>
 
-        <div id="chat-container" class="container">
-          <ul id="chat" class="mb-3"></ul>
-          <form id="message-form" class="input-group">
-            <input
-              id="message-input"
-              class="form-control"
-              autocomplete="off"
-              placeholder="Escribe un mensaje..."
-            />
-            <div class="input-group-append">
-              <button id="send-button" class="btn btn-outline-dark">
-                Enviar
-              </button>
-            </div>
-          </form>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat con Sockets</title>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
+    integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
 
-          <div class="card mt-4">
-            <div class="card-header">Usuarios Conectados</div>
+<body>
+  <div class="row p-4">
+    <div class="col">
+      <center>
+        <h1>Zoo Chat</h1>
+      </center>
 
-            <center>
-              <div class="card-body">
-                <p class="" id="online_users"></p>
-              </div>
-            </center>
+      <div id="chat-container" class="container">
+        <ul id="chat" class="mb-3"></ul>
+        <form id="message-form" class="input-group">
+          <input id="message-input" class="form-control" autocomplete="off" placeholder="Escribe un mensaje..." />
+          <div class="input-group-append">
+            <button id="send-button" class="btn btn-outline-dark">
+              Enviar
+            </button>
           </div>
+        </form>
+
+        <div class="card mt-4">
+          <div class="card-header">Usuarios Conectados</div>
+
+          <center>
+            <div class="card-body">
+              <p class="" id="online_users"></p>
+            </div>
+          </center>
         </div>
       </div>
-      <div class="col">
-        <center>
-          <h1>ChessPark</h1>
+    </div>
+    <div class="col">
+      <center>
+        <h1>ChessPark</h1>
 
-          <div class="card">
-            <div class="card-header">
-              <div class="vs-container">
-                <div class="row p-4">
-                  <p id="chess-player-01" class="col">Jugador 1</p>
-                  <div class="col">
-                    <img
-                      class="image-icon img-respirando"
-                      src="resources/img/vs.png"
-                      alt="some vs image"
-                    />
-                  </div>
-                  <p id="chess-player-02" class="col">Jugador 2</p>
+        <div class="card">
+          <div class="card-header">
+            <div class="vs-container">
+              <div class="row p-4">
+                <p id="chess-player-01" class="col">Jugador 1</p>
+                <div class="col">
+                  <img class="image-icon img-respirando" src="resources/img/vs.png" alt="some vs image" />
                 </div>
+                <p id="chess-player-02" class="col">Jugador 2</p>
               </div>
             </div>
-            <div class="card-body"></div>
           </div>
+          <div class="card-body"></div>
+        </div>
 
-          <button id="btn_join_chess" class="btn btn-success m-4">
-            Conectarse
-          </button>
-        </center>
-      </div>
+        <button id="btn_join_chess" class="btn btn-success m-4">
+          Conectarse
+        </button>
+      </center>
+      <div id="board2" style="width: 500px"></div>
+      
     </div>
+  </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <!-- <script src="js/main.js"></script> -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- <script src="js/main.js"></script> -->
 
-    <script>
-      const socket = io();
+  <script>
+    const socket = io();
 
-      const chat = document.getElementById("chat");
-      const online_users = document.getElementById("online_users");
+    const chat = document.getElementById("chat");
+    const online_users = document.getElementById("online_users");
 
-      const messageForm = document.getElementById("message-form");
-      const messageInput = document.getElementById("message-input");
+    const messageForm = document.getElementById("message-form");
+    const messageInput = document.getElementById("message-input");
 
-      const btn_join_chess = document.getElementById("btn_join_chess");
+    const btn_join_chess = document.getElementById("btn_join_chess");
 
-      const player01 = document.getElementById("chess-player-01");
-      const player02 = document.getElementById("chess-player-02");
+    const player01 = document.getElementById("chess-player-01");
+    const player02 = document.getElementById("chess-player-02");
 
-      let userId = null;
+    let userId = null;
 
-      socket.on("userId", (data) => {
-        if (userId == null) {
-          userId = data;
-          console.log(userId);
-        }
+    socket.on("userId", (data) => {
+      if (userId == null) {
+        userId = data;
+        console.log(userId);
+      }
+    });
+
+    socket.on("chatMessage", (data) => {
+      const item = document.createElement("li");
+      item.textContent = `${data.userId}: ${data.msg}`;
+      chat.appendChild(item);
+      chat.scrollTop = chat.scrollHeight;
+    });
+
+    socket.on("join-chess", (data) => {
+      player01.textContent = data[0];
+      player02.textContent = data[1];
+    });
+
+    socket.on("online_users_feed", (data) => {
+      online_users.textContent = `${data}`;
+    });
+
+    messageForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const msg = messageInput.value;
+      socket.emit("chatMessage", msg);
+      messageInput.value = "";
+    });
+
+    btn_join_chess.addEventListener("click", (event) => {
+      socket.emit("join-chess", userId);
+    });
+  </script>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+    integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+    integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script>
+
+  <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"
+    integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD"
+    crossorigin="anonymous"></script>
+  <script>
+    // Añade esta línea al principio de tu script
+    var game = new Chess();
+
+    var board2 = Chessboard('board2', {
+      draggable: true,
+      dropOffBoard: 'trash',
+      sparePieces: true,
+      onDrop: handleMove // New function to handle moves
+    });
+
+    $('#startBtn').on('click', board2.start);
+    $('#clearBtn').on('click', board2.clear);
+
+    function handleMove(source, target, piece, newPos, oldPos, orientation) {
+      // Intenta hacer el movimiento
+      var move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q' // Promociona al peón a reina si es necesario
       });
 
-      socket.on("chatMessage", (data) => {
-        const item = document.createElement("li");
-        item.textContent = `${data.userId}: ${data.msg}`;
-        chat.appendChild(item);
-        chat.scrollTop = chat.scrollHeight;
-      });
+      // Si el movimiento es ilegal, la función move devuelve null
+      if (move === null) return 'snapback'; // Esto hace que la pieza vuelva a su posición original
 
-      socket.on("join-chess", (data) => {
-        player01.textContent = data[0];
-        player02.textContent = data[1];
-      });
+      socket.emit('move', { source, target, piece, newPos, userId });
+    }
 
-      socket.on("online_users_feed", (data) => {
-        online_users.textContent = `${data}`;
-      });
+    socket.on('move', (data) => {
+      if (data.userId !== userId) {
+        game.move({ from: data.source, to: data.target }); // Actualiza el estado del juego
+        board2.position(data.newPos, true);
+      }
+    });
 
-      messageForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const msg = messageInput.value;
-        socket.emit("chatMessage", msg);
-        messageInput.value = "";
-      });
+    socket.on('reset-board', () => {
+      board2.start();
+      game = new Chess(); // Reinicia el estado del juego
+    });
 
-      btn_join_chess.addEventListener("click", (event) => {
-        socket.emit("join-chess", userId);
-      });
-    </script>
+    // Cuando un jugador se une al ajedrez, establece la orientación del tablero
+    socket.on('join-chess', (data) => {
+      player01.textContent = data[0];
+      player02.textContent = data[1];
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  </body>
+      // Si el usuario es el primer jugador, la orientación es 'white', de lo contrario es 'black'
+      var orientation = (userId === data[0]) ? 'white' : 'black';
+      board2.orientation(orientation);
+    });
+
+  </script>
+</body>
+
 </html>
