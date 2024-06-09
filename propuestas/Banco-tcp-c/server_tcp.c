@@ -1,5 +1,3 @@
-/* SERVIDOR */
-/********/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #define MAX_TAM_MENSAJE 256 // Número de caracteres máximo del mensaje
 #define MAX_USUARIOS 100
@@ -118,14 +117,56 @@ void manejar_mensaje(char *mensaje_entrada, char *mensaje_salida)
 }
 
 /**********************************************************/
+/* función para manejar un cliente en un hilo             */
+/**********************************************************/
+void *manejar_cliente(void *arg)
+{
+    int descriptor_socket_cliente = *((int *)arg);
+    char mensaje_entrada[MAX_TAM_MENSAJE], mensaje_salida[MAX_TAM_MENSAJE];
+    int recibidos, enviados;
+
+    do
+    {
+        // Recibe datos del cliente
+        recibidos = recv(descriptor_socket_cliente, mensaje_entrada, MAX_TAM_MENSAJE, 0);
+        if (recibidos <= 0)
+        {
+            printf("ERROR de recv() o conexión cerrada por el cliente\n");
+            break;
+        }
+        mensaje_entrada[recibidos] = '\0'; // Asegurar la terminación de la cadena
+
+        printf("***Servidor recibe dato del cliente: %s\n", mensaje_entrada);
+
+        // Manejar el mensaje del cliente
+        manejar_mensaje(mensaje_entrada, mensaje_salida);
+
+        // Enviar respuesta al cliente
+        enviados = send(descriptor_socket_cliente, mensaje_salida, strlen(mensaje_salida), 0);
+        if (enviados <= 0)
+        {
+            printf("Error en send() \n");
+            break;
+        }
+        printf("<<Servidor replica>>: %s\n", mensaje_salida);
+    } while (1);
+
+    close(descriptor_socket_cliente);
+    pthread_exit(NULL);
+}
+
+/**********************************************************/
 /* función MAIN                                           */
 /* Orden Parámetros: Puerto                               */
 /**********************************************************/
 int main(int argc, char *argv[])
 {
     struct sockaddr_in socket_servidor, socket_cliente;
+    int descriptor_socket_cliente;
+    socklen_t cliente_tam;
+    pthread_t hilo_cliente;
     char mensaje_entrada[MAX_TAM_MENSAJE], mensaje_salida[MAX_TAM_MENSAJE];
-    int recibidos, enviados; // bytes recibidos
+    int recibidos, enviados;
 
     if (argc != 2)
     {
@@ -166,12 +207,9 @@ int main(int argc, char *argv[])
 
     printf("\n***Servidor ACTIVO escuchando en el puerto: %s ...\n", argv[1]);
 
-    do
+    while (1)
     {
-        // Quedo a la espera de alguna conexión entrante
-        int descriptor_socket_cliente;
-        struct sockaddr_in socket_cliente;
-        socklen_t cliente_tam = sizeof(socket_cliente);
+        cliente_tam = sizeof(socket_cliente);
         descriptor_socket_cliente = accept(descriptor_socket_servidor, (struct sockaddr *)&socket_cliente, &cliente_tam);
         if (descriptor_socket_cliente == -1) {
             printf("ERROR al aceptar la conexión entrante\n");
@@ -179,35 +217,17 @@ int main(int argc, char *argv[])
         }
         printf("Cliente conectado: %s\n", inet_ntoa(socket_cliente.sin_addr));
 
-        do
+        //Crear hilo para manejar el cliente
+        if (pthread_create(&hilo_cliente, NULL, manejar_cliente, &descriptor_socket_cliente) != 0)
         {
-            // Recibe datos del cliente
-            recibidos = recv(descriptor_socket_cliente, mensaje_entrada, MAX_TAM_MENSAJE, 0);
-            if (recibidos <= 0)
-            {
-                printf("ERROR de recv() o conexión cerrada por el cliente\n");
-                close(descriptor_socket_cliente);
-                break;
-            }
-            mensaje_entrada[recibidos] = '\0'; // Asegurar la terminación de la cadena
+            printf("ERROR: No se pudo crear el hilo para manejar el cliente\n");
+            close(descriptor_socket_cliente);
+            continue;
+        }
 
-            printf("***Servidor recibe dato del cliente: %s\n", mensaje_entrada);
-
-            // Manejar el mensaje del cliente
-            manejar_mensaje(mensaje_entrada, mensaje_salida);
-
-            // Enviar respuesta al cliente
-            enviados = send(descriptor_socket_cliente, mensaje_salida, strlen(mensaje_salida), 0);
-            if (enviados <= 0)
-            {
-                printf("Error en send() \n");
-                close(descriptor_socket_cliente);
-                break;
-            }
-            printf("<<Servidor replica>>: %s\n", mensaje_salida);
-        } while (1);
-
-    } while (1);
+        // Desatachar hilo para que no se quede en estado 'zombie'
+        pthread_detach(hilo_cliente);
+    }
 
     // Cierra el servidor
     printf("***Cerrando servicio ...\n");
